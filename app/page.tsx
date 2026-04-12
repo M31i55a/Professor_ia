@@ -1,12 +1,24 @@
 import React from 'react'
-import { Button } from '@/components/ui/button'
+import CompanionCard from '@/components/CompanionCard'
+import CompanionsList from '@/components/CompanionsList'
+import CTA from '@/components/CTA'
+
 
 const Page = () => {
   return (
-    <div>
-      <h1 className='text-2xl underline'>Hello and welcome to the app</h1>
-      <Button>Let's get started!!!</Button>
-    </div>
+    <main>
+      <h1 className='text-2xl underline'>Popular Companions</h1>
+      <section className='home-section'>
+        <CompanionCard />
+        <CompanionCard />
+        <CompanionCard />
+      </section>
+
+      <section className="home-section">
+        <CompanionsList />
+        <CTA /> 
+      </section>
+    </main>
   )
 }
 
