@@ -38,7 +38,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ClerkProvider>
+        <ClerkProvider 
+          appearance={{
+            variables: {
+              colorPrimary: '#000000'
+            }
+          }}
+          allowedRedirectOrigins={['http://localhost:3000', 'http://localhost:3001']}
+        >
           <Navbar />
           {children}
         </ClerkProvider>

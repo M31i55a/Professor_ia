@@ -1,9 +1,9 @@
-// type User = {
-//   name: string;
-//   email: string;
-//   image?: string;
-//   accountId: string;
-// };
+type User = {
+  name: string;
+  email: string;
+  image?: string;
+  accountId: string;
+};
 
 enum Subject {
   maths = "maths",
@@ -28,10 +28,10 @@ type Companion = Models.DocumentList<Models.Document> & {
 
 interface CreateCompanion {
   name: string;
-  subject: string;
+  subject: string; 
   topic: string;
-  voice: string;
   style: string;
+  voice: string;
   duration: number;
 }
 
