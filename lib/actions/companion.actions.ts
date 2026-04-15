@@ -45,31 +45,53 @@ export const createCompanion = async (formData: CreateCompanion) => {
     }
 }
 
-export const getCompanions = async (subject?: string, page: number = 1, limit: number = 10) => {
+export const getAllCompanions = async ({ limit = 10, page = 1, subject, topic }: GetAllCompanions, userOnly: boolean = false) => {
     try {
-        const { userId } = await auth();
+        const offset = (page - 1) * limit;
+        let sqlQuery = 'SELECT * FROM companions WHERE 1=1';
+        let params: any[] = [];
+        let paramCount = 0;
 
-        if (!userId) {
-            throw new Error('Unauthorized');
+        // Filter by current user if requested
+        if (userOnly) {
+            const { userId } = await auth();
+            if (!userId) {
+                throw new Error('Unauthorized - Please sign in first');
+            }
+            paramCount++;
+            sqlQuery += ` AND author = $${paramCount}`;
+            params.push(userId);
         }
 
-        const offset = (page - 1) * limit;
-        let sqlQuery = 'SELECT * FROM companions WHERE author = $1';
-        let params: any[] = [userId];
-        let paramCount = 1;
-
+        // Filter by subject if provided
         if (subject) {
             paramCount++;
-            sqlQuery += ` AND subject = $${paramCount}`;
-            params.push(subject);
+            sqlQuery += ` AND subject ILIKE $${paramCount}`;
+            params.push(`%${subject}%`);
         }
 
-        sqlQuery += ' ORDER BY created_at DESC LIMIT $' + (paramCount + 1) + ' OFFSET $' + (paramCount + 2);
-        params.push(limit, offset);
+        // Filter by topic or name if provided
+        if (topic) {
+            paramCount++;
+            const topicParam = `%${topic}%`;
+            sqlQuery += ` AND (topic ILIKE $${paramCount} OR name ILIKE $${paramCount})`;
+            params.push(topicParam, topicParam);
+            paramCount++; // increment again since we used it twice
+        }
+
+        // Add pagination
+        paramCount++;
+        sqlQuery += ` ORDER BY created_at DESC LIMIT $${paramCount}`;
+        params.push(limit);
+
+        paramCount++;
+        sqlQuery += ` OFFSET $${paramCount}`;
+        params.push(offset);
 
         const result = await query(sqlQuery, params);
         return result.rows;
     } catch (error) {
+        console.error('Error in getAllCompanions:', error);
         throw error;
     }
 }
