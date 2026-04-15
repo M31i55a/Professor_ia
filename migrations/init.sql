@@ -28,3 +28,9 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- Add foreign key constraint to link companions to users
+-- This ensures every companion belongs to a valid user and cannot be orphaned
+ALTER TABLE companions
+ADD CONSTRAINT fk_companions_author
+FOREIGN KEY (author) REFERENCES users(id) ON DELETE CASCADE;
