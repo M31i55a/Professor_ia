@@ -75,8 +75,7 @@ export const getAllCompanions = async ({ limit = 10, page = 1, subject, topic }:
             paramCount++;
             const topicParam = `%${topic}%`;
             sqlQuery += ` AND (topic ILIKE $${paramCount} OR name ILIKE $${paramCount})`;
-            params.push(topicParam, topicParam);
-            paramCount++; // increment again since we used it twice
+            params.push(topicParam);
         }
 
         // Add pagination
