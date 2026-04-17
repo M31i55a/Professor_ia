@@ -12,23 +12,27 @@ const CompanionsLibrary = async ({ searchParams }: SearchParams) => {
     const companions = await getAllCompanions({ subject, topic });
 
     return (
-        <main>
-            <section className="flex justify-between gap-4 max-sm:flex-col">
+        <main className="flex flex-col gap-6">
+            <section className="flex justify-between items-center gap-4 max-sm:flex-col max-sm:items-start">
                 <h1>Companion Library</h1>
-                <div className="flex gap-4">
+                <div className="flex gap-3 max-sm:w-full">
                     <SearchInput />
                     <SubjectFilter />
                 </div>
             </section>
-            <section className="companions-grid">
-                {companions.map((companion) => (
-                    <CompanionCard
-                        key={companion.id}
-                        {...companion}
-                        color={getSubjectColor(companion.subject)}
-                    />
-                ))}
-            </section>
+            {companions.length === 0 ? (
+                <p className="text-center text-muted-foreground py-20">No companions found. Try a different search or filter.</p>
+            ) : (
+                <section className="companions-grid">
+                    {companions.map((companion) => (
+                        <CompanionCard
+                            key={companion.id}
+                            {...companion}
+                            color={getSubjectColor(companion.subject)}
+                        />
+                    ))}
+                </section>
+            )}
         </main>
     )
 }
