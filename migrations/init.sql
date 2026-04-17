@@ -34,3 +34,15 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 ALTER TABLE companions
 ADD CONSTRAINT fk_companions_author
 FOREIGN KEY (author) REFERENCES users(id) ON DELETE CASCADE;
+
+-- Create session_history table to track completed sessions
+CREATE TABLE IF NOT EXISTS session_history (
+  id SERIAL PRIMARY KEY,
+  companion_id INTEGER NOT NULL REFERENCES companions(id) ON DELETE CASCADE,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_session_history_companion ON session_history(companion_id);
+CREATE INDEX IF NOT EXISTS idx_session_history_user ON session_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_session_history_created ON session_history(created_at DESC);

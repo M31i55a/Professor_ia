@@ -186,11 +186,47 @@ export const addToSessionHistory = async (companionId: string) => {
     return result.rows[0];
 }
 
+export const getMyRecentSessions = async (limit = 5) => {
+    const { userId } = await auth();
+    if (!userId) return [];
+
+    const result = await query(
+        `SELECT DISTINCT ON (sh.companion_id) c.*
+         FROM session_history sh
+         JOIN companions c ON c.id = sh.companion_id
+         WHERE sh.user_id = $1
+         ORDER BY sh.companion_id, sh.created_at DESC`,
+        [userId]
+    );
+
+    // Re-sort by most recent session and limit
+    const sorted = result.rows
+        .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, limit);
+
+    return sorted;
+}
+
 export const getRecentSessions = async (limit = 10) => {
     const result = await query(
         `SELECT c.* FROM session_history sh
          JOIN companions c ON c.id = sh.companion_id
          ORDER BY sh.created_at DESC
+         LIMIT $1`,
+        [limit]
+    );
+
+    return result.rows;
+}
+
+export const getPopularCompanions = async (limit = 3) => {
+    const result = await query(
+        `SELECT c.*, COUNT(sh.id) AS session_count,
+                COUNT(sh.id) * c.duration AS total_minutes
+         FROM companions c
+         LEFT JOIN session_history sh ON sh.companion_id = c.id
+         GROUP BY c.id
+         ORDER BY total_minutes DESC, session_count DESC, c.created_at DESC
          LIMIT $1`,
         [limit]
     );

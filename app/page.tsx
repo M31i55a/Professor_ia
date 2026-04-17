@@ -2,51 +2,43 @@ import React from 'react'
 import CompanionCard from '@/components/CompanionCard'
 import CompanionsList from '@/components/CompanionsList'
 import CTA from '@/components/CTA'
-import {recentSessions} from "@/constants/index";
+import { getPopularCompanions, getAllCompanions } from "@/lib/actions/companion.actions";
+import { getSubjectColor } from "@/lib/utils";
 
 
-const Page = () => {
+const Page = async () => {
+  const [popularCompanions, recentSessions] = await Promise.all([
+    getPopularCompanions(3),
+    getAllCompanions({ limit: 5 }),
+  ]);
+
   return (
-    <main>
-      <h1 className='text-2xl underline'>Popular Companions</h1>
-      
-      <section className='home-section'>
-        <CompanionCard 
-          id="123"
-          name="Albert Einstein"
-          topic="Physics"
-          subject="Science"
-          duration={30}
-          color="#F59E0B"
-          description="Learn physics with Albert Einstein, the father of modern physics. Explore the mysteries of the universe and unravel the secrets of space and time with this iconic companion."
-        />
-        <CompanionCard 
-          id="456"
-          name="Marie Curie"
-          topic="Chemistry"
-          subject="Science"
-          duration={45}
-          color="#3B82F6"
-          description="Discover the wonders of chemistry with Marie Curie, a pioneer in the field. Learn about radioactivity and the elements that shaped our understanding of the periodic table."
-        />
-        <CompanionCard 
-          id="789"
-          name="Isaac Newton"
-          topic="Mathematics"
-          subject="Mathematics"
-          duration={60}
-          color="#10B981"
-          description="Master mathematics with Isaac Newton, the genius behind calculus and the laws of motion. Dive into the world of numbers and discover the principles that govern our universe."
-        />
+    <main className="flex flex-col gap-8">
+      <section>
+        <h1 className="mb-5">Popular Companions</h1>
+        {popularCompanions.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {popularCompanions.map((companion) => (
+              <CompanionCard
+                key={companion.id}
+                {...companion}
+                color={getSubjectColor(companion.subject)}
+                description=""
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground py-6">No popular companions yet. Complete a session to see them here.</p>
+        )}
       </section>
 
       <section className="home-section">
-        <CompanionsList 
-          title="Recently completed sessions"
+        <CompanionsList
+          title="Recently Created Companions"
           companions={recentSessions}
-          classNames="w-2/3 max-md:w-full"
+          classNames="flex-1 w-full"
         />
-        <CTA /> 
+        <CTA />
       </section>
     </main>
   )
