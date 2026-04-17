@@ -118,7 +118,7 @@ export const getCompanion = async (id: string) => {
     }
 }
 
-export const deleteCompanion = async (id: string) => {
+export const deleteCompanion = async (id: string, path: string = '/companions') => {
     try {
         const { userId } = await auth();
 
@@ -135,7 +135,12 @@ export const deleteCompanion = async (id: string) => {
             throw new Error('Companion not found or unauthorized');
         }
 
+        revalidatePath('/');
         revalidatePath('/companions');
+        revalidatePath('/bookmarked');
+        if (path !== '/' && path !== '/companions' && path !== '/bookmarked') {
+            revalidatePath(path);
+        }
         return { message: 'Companion deleted successfully' };
     } catch (error) {
         throw error;

@@ -3,11 +3,14 @@ import CompanionCard from "@/components/CompanionCard";
 import {getSubjectColor} from "@/lib/utils";
 import SearchInput from "@/components/SearchInput";
 import SubjectFilter from "@/components/SubjectFilter";
+import { auth } from "@clerk/nextjs/server";
 
 const CompanionsLibrary = async ({ searchParams }: SearchParams) => {
     const filters = await searchParams;
     const subject = filters.subject ? filters.subject : '';
     const topic = filters.topic ? filters.topic : '';
+
+    const { userId } = await auth();
 
     const [companions, bookmarkedIds] = await Promise.all([
         getAllCompanions({ subject, topic }),
@@ -33,6 +36,7 @@ const CompanionsLibrary = async ({ searchParams }: SearchParams) => {
                             {...companion}
                             color={getSubjectColor(companion.subject)}
                             isBookmarked={bookmarkedIds.includes(String(companion.id))}
+                            isOwner={companion.author === userId}
                         />
                     ))}
                 </section>

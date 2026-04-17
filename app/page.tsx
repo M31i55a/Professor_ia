@@ -4,9 +4,12 @@ import CompanionsList from '@/components/CompanionsList'
 import CTA from '@/components/CTA'
 import { getPopularCompanions, getAllCompanions, getMyBookmarkedIds } from "@/lib/actions/companion.actions";
 import { getSubjectColor } from "@/lib/utils";
+import { auth } from "@clerk/nextjs/server";
 
 
 const Page = async () => {
+  const { userId } = await auth();
+
   const [popularCompanions, recentSessions, bookmarkedIds] = await Promise.all([
     getPopularCompanions(3),
     getAllCompanions({ limit: 5 }),
@@ -26,6 +29,7 @@ const Page = async () => {
                 color={getSubjectColor(companion.subject)}
                 description=""
                 isBookmarked={bookmarkedIds.includes(String(companion.id))}
+                isOwner={companion.author === userId}
               />
             ))}
           </div>

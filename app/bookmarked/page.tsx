@@ -29,6 +29,7 @@ const BookmarkedPage = async () => {
                             {...companion}
                             color={getSubjectColor(companion.subject)}
                             isBookmarked={true}
+                            isOwner={companion.author === userId}
                         />
                     ))}
                 </section>
