@@ -3,6 +3,7 @@ import { Bricolage_Grotesque, Geist } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import Navbar from "@/components/Navbar";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 //clerk
 import { Geist_Mono } from 'next/font/google'
@@ -36,19 +37,21 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ClerkProvider 
-          appearance={{
-            variables: {
-              colorPrimary: '#000000'
-            }
-          }}
-          allowedRedirectOrigins={['http://localhost:3000', 'http://localhost:3001']}
-        >
-          <Navbar />
-          {children}
-        </ClerkProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <ClerkProvider 
+            appearance={{
+              variables: {
+                colorPrimary: '#000000'
+              }
+            }}
+            allowedRedirectOrigins={['http://localhost:3000', 'http://localhost:3001']}
+          >
+            <Navbar />
+            {children}
+          </ClerkProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

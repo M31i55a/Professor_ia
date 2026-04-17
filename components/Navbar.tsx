@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
 import NavItems from '@/components/NavItems'
+import ThemeToggle from '@/components/ThemeToggle'
 
 const Navbar = () => {
   return (
@@ -24,6 +25,7 @@ const Navbar = () => {
             </div>
 
             <header className="flex justify-end items-center p-4 gap-4 h-16">
+                <ThemeToggle />
                 <Show when="signed-out">
                     <SignInButton />
                     <SignUpButton>

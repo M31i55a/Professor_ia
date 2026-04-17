@@ -19,7 +19,7 @@ const CompanionCard = ({id, name, topic, subject, duration, color, description}:
       <div className="flex justify-between items-center">
         <div className="subject-badge">{subject}</div>
 
-        <button className="companion-bookmark">
+        <button className="companion-bookmark bg-black">
           <Image
             // src={
             //   bookmarked ? "/icons/bookmark-filled.svg" : "/icons/bookmark.svg"
@@ -45,7 +45,7 @@ const CompanionCard = ({id, name, topic, subject, duration, color, description}:
       </div>
 
       <Link href={`/companions/${id}`} className="w-full">
-        <button className="btn-primary w-full justify-center">
+        <button className="btn-primary w-full justify-center bg-black">
           Launch Lesson
         </button>
       </Link>
