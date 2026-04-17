@@ -15,8 +15,9 @@ interface CompanionCardProps {
 
 const CompanionCard = ({id, name, topic, subject, duration, color, description}: CompanionCardProps) => {
   return (
-    <article className="companion-card" style={{ backgroundColor: color }}>
-      <div className="flex justify-between items-center">
+    <article className="companion-card relative" style={{ backgroundColor: color }}>
+      <div className="hidden dark:block absolute inset-0 rounded-4xl bg-black/30 pointer-events-none z-0" />
+      <div className="relative z-10 flex justify-between items-center">
         <div className="subject-badge">{subject}</div>
 
         <button className="companion-bookmark bg-black">
@@ -32,9 +33,9 @@ const CompanionCard = ({id, name, topic, subject, duration, color, description}:
         </button>
       </div>
 
-      <h2 className="text-2xl font-bold">{name}</h2>
-      <p className="text-sm">{topic}</p>
-      <div className="flex items-center gap-2">
+      <h2 className="relative z-10 text-2xl font-bold">{name}</h2>
+      <p className="relative z-10 text-sm">{topic}</p>
+      <div className="relative z-10 flex items-center gap-2">
         <Image
           src="/icons/clock.svg"
           alt="duration"
@@ -44,7 +45,7 @@ const CompanionCard = ({id, name, topic, subject, duration, color, description}:
         <p className="text-sm">{duration} minutes</p>
       </div>
 
-      <Link href={`/companions/${id}`} className="w-full">
+      <Link href={`/companions/${id}`} className="relative z-10 w-full">
         <button className="btn-primary w-full justify-center bg-black">
           Launch Lesson
         </button>
