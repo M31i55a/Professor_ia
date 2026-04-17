@@ -170,3 +170,118 @@ export const updateCompanion = async (id: string, formData: CreateCompanion) => 
         throw error;
     }
 }
+
+export const addToSessionHistory = async (companionId: string) => {
+    const { userId } = await auth();
+
+    if (!userId) throw new Error('Unauthorized');
+
+    const result = await query(
+        `INSERT INTO session_history (companion_id, user_id)
+         VALUES ($1, $2)
+         RETURNING id`,
+        [companionId, userId]
+    );
+
+    return result.rows[0];
+}
+
+export const getRecentSessions = async (limit = 10) => {
+    const result = await query(
+        `SELECT c.* FROM session_history sh
+         JOIN companions c ON c.id = sh.companion_id
+         ORDER BY sh.created_at DESC
+         LIMIT $1`,
+        [limit]
+    );
+
+    return result.rows;
+}
+
+export const getUserSessions = async (userId: string, limit = 10) => {
+    const result = await query(
+        `SELECT c.* FROM session_history sh
+         JOIN companions c ON c.id = sh.companion_id
+         WHERE sh.user_id = $1
+         ORDER BY sh.created_at DESC
+         LIMIT $2`,
+        [userId, limit]
+    );
+
+    return result.rows;
+}
+
+export const getUserCompanions = async (userId: string) => {
+    const result = await query(
+        `SELECT * FROM companions WHERE author = $1`,
+        [userId]
+    );
+
+    return result.rows;
+}
+
+export const newCompanionPermissions = async () => {
+    const { userId, has } = await auth();
+
+    if (!userId) throw new Error('Unauthorized');
+
+    let limit = 0;
+
+    if (has({ plan: 'pro' })) {
+        return true;
+    } else if (has({ feature: "3_companion_limit" })) {
+        limit = 3;
+    } else if (has({ feature: "10_companion_limit" })) {
+        limit = 10;
+    }
+
+    const result = await query(
+        `SELECT COUNT(*) as count FROM companions WHERE author = $1`,
+        [userId]
+    );
+
+    const companionCount = parseInt(result.rows[0].count);
+
+    if (companionCount >= limit) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+export const addBookmark = async (companionId: string, path: string) => {
+    const { userId } = await auth();
+    if (!userId) return;
+
+    await query(
+        `INSERT INTO bookmarks (companion_id, user_id)
+         VALUES ($1, $2)
+         ON CONFLICT (companion_id, user_id) DO NOTHING`,
+        [companionId, userId]
+    );
+
+    revalidatePath(path);
+}
+
+export const removeBookmark = async (companionId: string, path: string) => {
+    const { userId } = await auth();
+    if (!userId) return;
+
+    await query(
+        `DELETE FROM bookmarks WHERE companion_id = $1 AND user_id = $2`,
+        [companionId, userId]
+    );
+
+    revalidatePath(path);
+}
+
+export const getBookmarkedCompanions = async (userId: string) => {
+    const result = await query(
+        `SELECT c.* FROM bookmarks b
+         JOIN companions c ON c.id = b.companion_id
+         WHERE b.user_id = $1`,
+        [userId]
+    );
+
+    return result.rows;
+}

@@ -13,7 +13,7 @@ interface CompanionCardProps {
 }
 
 
-const CompanionCard = ({id, name, topic, subject, duration, color, description}) => {
+const CompanionCard = ({id, name, topic, subject, duration, color, description}: CompanionCardProps) => {
   return (
     <article className="companion-card" style={{ backgroundColor: color }}>
       <div className="flex justify-between items-center">
