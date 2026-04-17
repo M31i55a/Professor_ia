@@ -2,14 +2,15 @@ import React from 'react'
 import CompanionCard from '@/components/CompanionCard'
 import CompanionsList from '@/components/CompanionsList'
 import CTA from '@/components/CTA'
-import { getPopularCompanions, getAllCompanions } from "@/lib/actions/companion.actions";
+import { getPopularCompanions, getAllCompanions, getMyBookmarkedIds } from "@/lib/actions/companion.actions";
 import { getSubjectColor } from "@/lib/utils";
 
 
 const Page = async () => {
-  const [popularCompanions, recentSessions] = await Promise.all([
+  const [popularCompanions, recentSessions, bookmarkedIds] = await Promise.all([
     getPopularCompanions(3),
     getAllCompanions({ limit: 5 }),
+    getMyBookmarkedIds(),
   ]);
 
   return (
@@ -24,6 +25,7 @@ const Page = async () => {
                 {...companion}
                 color={getSubjectColor(companion.subject)}
                 description=""
+                isBookmarked={bookmarkedIds.includes(String(companion.id))}
               />
             ))}
           </div>

@@ -1,6 +1,7 @@
 import React from 'react'
 import Image from 'next/image'
 import Link from 'next/dist/client/link';
+import BookmarkButton from '@/components/BookmarkButton';
 
 interface CompanionCardProps {
   id: string;
@@ -10,27 +11,18 @@ interface CompanionCardProps {
   duration: number;
   color: string;
   description: string;
+  isBookmarked?: boolean;
 }
 
 
-const CompanionCard = ({id, name, topic, subject, duration, color, description}: CompanionCardProps) => {
+const CompanionCard = ({id, name, topic, subject, duration, color, description, isBookmarked = false}: CompanionCardProps) => {
   return (
     <article className="companion-card relative" style={{ backgroundColor: color }}>
       <div className="hidden dark:block absolute inset-0 rounded-4xl bg-black/30 pointer-events-none z-0" />
       <div className="relative z-10 flex justify-between items-center">
         <div className="subject-badge">{subject}</div>
 
-        <button className="companion-bookmark bg-black">
-          <Image
-            // src={
-            //   bookmarked ? "/icons/bookmark-filled.svg" : "/icons/bookmark.svg"
-            // }
-            src="/icons/bookmark.svg"
-            alt="bookmark"
-            width={12.5}
-            height={15}
-          />
-        </button>
+        <BookmarkButton companionId={String(id)} isBookmarked={isBookmarked} />
       </div>
 
       <h2 className="relative z-10 text-2xl font-bold">{name}</h2>

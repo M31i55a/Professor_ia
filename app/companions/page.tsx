@@ -1,4 +1,4 @@
-import {getAllCompanions} from "@/lib/actions/companion.actions";
+import {getAllCompanions, getMyBookmarkedIds} from "@/lib/actions/companion.actions";
 import CompanionCard from "@/components/CompanionCard";
 import {getSubjectColor} from "@/lib/utils";
 import SearchInput from "@/components/SearchInput";
@@ -9,7 +9,10 @@ const CompanionsLibrary = async ({ searchParams }: SearchParams) => {
     const subject = filters.subject ? filters.subject : '';
     const topic = filters.topic ? filters.topic : '';
 
-    const companions = await getAllCompanions({ subject, topic });
+    const [companions, bookmarkedIds] = await Promise.all([
+        getAllCompanions({ subject, topic }),
+        getMyBookmarkedIds(),
+    ]);
 
     return (
         <main className="flex flex-col gap-6">
@@ -29,6 +32,7 @@ const CompanionsLibrary = async ({ searchParams }: SearchParams) => {
                             key={companion.id}
                             {...companion}
                             color={getSubjectColor(companion.subject)}
+                            isBookmarked={bookmarkedIds.includes(String(companion.id))}
                         />
                     ))}
                 </section>

@@ -315,9 +315,22 @@ export const getBookmarkedCompanions = async (userId: string) => {
     const result = await query(
         `SELECT c.* FROM bookmarks b
          JOIN companions c ON c.id = b.companion_id
-         WHERE b.user_id = $1`,
+         WHERE b.user_id = $1
+         ORDER BY b.created_at DESC`,
         [userId]
     );
 
     return result.rows;
+}
+
+export const getMyBookmarkedIds = async (): Promise<string[]> => {
+    const { userId } = await auth();
+    if (!userId) return [];
+
+    const result = await query(
+        `SELECT companion_id FROM bookmarks WHERE user_id = $1`,
+        [userId]
+    );
+
+    return result.rows.map((r: any) => String(r.companion_id));
 }

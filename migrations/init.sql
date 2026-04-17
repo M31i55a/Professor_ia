@@ -46,3 +46,15 @@ CREATE TABLE IF NOT EXISTS session_history (
 CREATE INDEX IF NOT EXISTS idx_session_history_companion ON session_history(companion_id);
 CREATE INDEX IF NOT EXISTS idx_session_history_user ON session_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_session_history_created ON session_history(created_at DESC);
+
+-- Create bookmarks table
+CREATE TABLE IF NOT EXISTS bookmarks (
+  id SERIAL PRIMARY KEY,
+  companion_id INTEGER NOT NULL REFERENCES companions(id) ON DELETE CASCADE,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (companion_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_bookmarks_user ON bookmarks(user_id);
+CREATE INDEX IF NOT EXISTS idx_bookmarks_companion ON bookmarks(companion_id);
