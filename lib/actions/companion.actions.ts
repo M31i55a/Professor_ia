@@ -1,7 +1,7 @@
 
 "use server"
 
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { query } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
@@ -23,6 +23,20 @@ export const createCompanion = async (formData: CreateCompanion) => {
         if (!name || !subject || !topic || !style || !voice || !duration) {
             throw new Error('Missing required fields');
         }
+
+        // Upsert the Clerk user into the local users table to satisfy the FK constraint
+        const clerkUser = await currentUser();
+        await query(
+            `INSERT INTO users (id, email, name, image)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (id) DO NOTHING`,
+            [
+                userId,
+                clerkUser?.emailAddresses?.[0]?.emailAddress ?? '',
+                clerkUser?.fullName ?? clerkUser?.username ?? '',
+                clerkUser?.imageUrl ?? '',
+            ]
+        );
 
         console.log('Creating companion for user:', userId);
 

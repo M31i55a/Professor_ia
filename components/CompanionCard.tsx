@@ -3,6 +3,7 @@ import Image from 'next/image'
 import Link from 'next/dist/client/link';
 import BookmarkButton from '@/components/BookmarkButton';
 import DeleteButton from '@/components/DeleteButton';
+import TiltCard from '@/components/TiltCard';
 
 interface CompanionCardProps {
   id: string;
@@ -19,8 +20,12 @@ interface CompanionCardProps {
 
 const CompanionCard = ({id, name, topic, subject, duration, color, description, isBookmarked = false, isOwner = false}: CompanionCardProps) => {
   return (
-    <article className="companion-card relative" style={{ backgroundColor: color }}>
-      <div className="hidden dark:block absolute inset-0 rounded-4xl bg-black/30 pointer-events-none z-0" />
+    <TiltCard className="companion-card" style={{ backgroundColor: color }}>
+      {/* Glossy top-edge highlight */}
+      <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/60 to-transparent rounded-t-4xl pointer-events-none" />
+      {/* Dark overlay in dark mode */}
+      <div className="hidden dark:block absolute inset-0 rounded-4xl bg-black/25 pointer-events-none z-0" />
+
       <div className="relative z-10 flex justify-between items-center">
         <div className="subject-badge">{subject}</div>
 
@@ -47,7 +52,7 @@ const CompanionCard = ({id, name, topic, subject, duration, color, description, 
           Launch Lesson
         </button>
       </Link>
-    </article>
+    </TiltCard>
   )
 }
 

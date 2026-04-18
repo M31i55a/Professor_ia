@@ -8,7 +8,7 @@
 :root {
   --primary: oklch(0.205 0 0);
 
-  --cta: #2c2c2c;
+  --cta: #1a1a2e;
   --cta-gold: #fccc41;
   --radius: 0.625rem;
   --card: oklch(1 0 0);
@@ -95,37 +95,33 @@ body {
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: oklch(0.1 0.01 265);
+  --foreground: oklch(0.95 0 0);
+  --card: oklch(0.15 0.01 265);
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.15 0.01 265);
+  --popover-foreground: oklch(0.95 0 0);
+  --primary: oklch(0.85 0.18 265);
+  --primary-foreground: oklch(0.1 0 0);
+  --secondary: oklch(0.2 0.02 265);
+  --secondary-foreground: oklch(0.95 0 0);
+  --muted: oklch(0.2 0.02 265);
+  --muted-foreground: oklch(0.65 0.05 265);
+  --accent: oklch(0.22 0.04 265);
+  --accent-foreground: oklch(0.95 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 10%);
+  --ring: oklch(0.7 0.18 265);
+  --cta: #0f0f2a;
+  --sidebar: oklch(0.13 0.01 265);
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: oklch(0.7 0.2 265);
+  --sidebar-primary-foreground: oklch(0.95 0 0);
+  --sidebar-accent: oklch(0.2 0.03 265);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.5 0.15 265);
 }
 
 @layer base {
@@ -139,7 +135,7 @@ body {
     @apply mx-auto px-14 flex flex-col gap-8 bg-background h-full max-w-[1400px] pt-10 max-sm:px-2;
   }
   h1 {
-    @apply text-3xl font-bold;
+    @apply text-3xl font-bold bg-linear-to-r from-foreground to-foreground/70 bg-clip-text;
   }
   html {
     @apply font-sans;
@@ -154,13 +150,28 @@ body {
     @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5 w-full mt-2;
   }
   .companion-card {
-    @apply flex flex-col rounded-4xl border border-black dark:border-white/20 px-5 py-5 gap-5 w-full justify-between transition-[transform,filter] duration-300 ease-in-out hover:scale-[1.02] hover:brightness-105 hover:shadow-lg;
+    @apply relative flex flex-col rounded-4xl px-5 py-5 gap-5 w-full justify-between overflow-hidden
+      border border-black/15 dark:border-white/10
+      bg-white/70 dark:bg-white/5
+      backdrop-blur-md
+      shadow-md dark:shadow-[0_0_20px_rgba(139,92,246,0.08)]
+      transition-shadow duration-300
+      transform-3d;
+    will-change: transform;
   }
   .subject-badge {
-    @apply bg-black dark:bg-white text-white dark:text-black rounded-4xl text-sm px-2 py-1 capitalize;
+    @apply rounded-2xl text-sm px-3 py-1 capitalize font-semibold
+      bg-black/80 text-white
+      dark:bg-white/10 dark:text-white dark:border dark:border-white/20
+      backdrop-blur-sm
+      shadow-sm;
   }
   .companion-bookmark {
-    @apply px-2 bg-black dark:bg-white rounded-4xl flex items-center h-full aspect-square cursor-pointer;
+    @apply px-2 rounded-xl flex items-center h-full aspect-square cursor-pointer
+      bg-black/80 dark:bg-white/10 dark:border dark:border-white/20
+      backdrop-blur-sm
+      transition-all duration-200
+      hover:scale-110 hover:brightness-125;
   }
   .input {
     @apply !border-black dark:!border-white/30 !bg-white dark:!bg-gray-900 focus-visible:!ring-0 focus-visible:!border-black dark:focus-visible:!border-white/50 !w-full;
@@ -169,22 +180,45 @@ body {
     @apply rounded-4xl border border-black dark:border-white/20;
   }
   .cta-section {
-    @apply bg-cta text-white rounded-4xl px-7 py-10 flex flex-col items-center text-center gap-5 w-1/3 shrink-0 max-lg:w-full transition-[transform,filter] duration-500 ease-in-out hover:scale-[1.02] hover:brightness-110;
+    @apply text-white rounded-4xl px-7 py-10 flex flex-col items-center text-center gap-5 w-1/3 shrink-0 max-lg:w-full
+      bg-linear-to-br from-[#1a1a3e] to-[#0f0f2a]
+      dark:from-[#0f0f2a] dark:to-[#050510]
+      border border-white/10
+      shadow-[0_0_40px_rgba(139,92,246,0.15)]
+      transition-all duration-500
+      hover:shadow-[0_0_60px_rgba(139,92,246,0.3)] hover:scale-[1.02];
   }
   .cta-badge {
     @apply bg-cta-gold rounded-4xl px-3 py-1.5 text-black;
   }
   .btn-primary {
-    @apply bg-primary text-white rounded-xl cursor-pointer px-4 py-2 flex items-center gap-2 transition-[transform,filter] duration-500 ease-in-out hover:scale-[1.03] hover:brightness-125 active:scale-[0.98];
+    @apply bg-black dark:bg-white/10 dark:border dark:border-white/20 dark:text-white
+      text-white rounded-xl cursor-pointer px-4 py-2 flex items-center gap-2
+      transition-all duration-300
+      hover:scale-[1.03] hover:shadow-[0_0_16px_rgba(139,92,246,0.5)]
+      active:scale-[0.97];
   }
   .navbar {
-    @apply flex items-center justify-between mx-auto w-full px-14 py-4 bg-white dark:bg-gray-950 max-sm:px-4;
+    @apply flex items-center justify-between mx-auto w-full px-14 py-4
+      bg-white/80 dark:bg-[#0a0a1a]/80
+      backdrop-blur-xl
+      border-b border-black/8 dark:border-white/8
+      max-sm:px-4
+      sticky top-0 z-50;
   }
   .btn-signin {
-    @apply border border-black dark:border-white/30 rounded-4xl px-4 py-2.5 text-sm font-semibold flex items-center gap-2 cursor-pointer dark:text-white transition-[transform,filter] duration-500 ease-in-out hover:scale-[1.03] hover:brightness-125 active:scale-[0.98];
+    @apply border border-black/20 dark:border-white/20 rounded-xl px-4 py-2 text-sm font-semibold flex items-center gap-2 cursor-pointer dark:text-white
+      bg-transparent dark:bg-white/5
+      backdrop-blur-sm
+      transition-all duration-300
+      hover:scale-[1.03] hover:border-black/40 dark:hover:border-white/40 hover:bg-black/5 dark:hover:bg-white/10
+      active:scale-[0.98];
   }
   .companion-list {
-    @apply rounded-4xl border border-black dark:border-white/20 px-7 pt-7 pb-10 max-lg:w-full bg-white dark:bg-gray-900;
+    @apply rounded-4xl border border-black/10 dark:border-white/10 px-7 pt-7 pb-10 max-lg:w-full
+      bg-white/70 dark:bg-white/4
+      backdrop-blur-md
+      shadow-sm;
   }
   .companion-limit {
     @apply items-center justify-center flex flex-col gap-4 w-full min-2xl:w-1/2 pt-20 text-center;
