@@ -1,7 +1,7 @@
 'use client';
 
 import {usePathname, useRouter, useSearchParams} from "next/navigation";
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import Image from "next/image";
 import {formUrlQuery, removeKeysFromUrlQuery} from "@jsmastery/utils";
 
@@ -9,32 +9,38 @@ const SearchInput = () => {
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const query = searchParams.get('topic') || '';
+
+    // Keep a ref so the debounced callback always reads the latest searchParams
+    // without making searchParams a dependency (which would re-trigger on every URL change)
+    const searchParamsRef = useRef(searchParams);
+    searchParamsRef.current = searchParams;
 
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
+            const params = searchParamsRef.current;
             if(searchQuery) {
                 const newUrl = formUrlQuery({
-                    params: searchParams.toString(),
+                    params: params.toString(),
                     key: "topic",
                     value: searchQuery,
                 });
 
                 router.push(newUrl, { scroll: false });
             } else {
-                if(pathname === '/companions') {
+                if(pathname === '/companions' && params.has('topic')) {
                     const newUrl = removeKeysFromUrlQuery({
-                        params: searchParams.toString(),
+                        params: params.toString(),
                         keysToRemove: ["topic"],
                     });
 
                     router.push(newUrl, { scroll: false });
                 }
             }
-        }, 500)
-    }, [searchQuery, router, searchParams, pathname]);
+        }, 500);
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchQuery, router, pathname]);
 
     return (
         <div className="relative border border-black rounded-lg items-center flex gap-2 px-2 py-1 h-fit">
