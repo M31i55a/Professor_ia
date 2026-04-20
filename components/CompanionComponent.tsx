@@ -20,6 +20,8 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
     const [messages, setMessages] = useState<SavedMessage[]>([]);
+    const [callError, setCallError] = useState<string | null>(null);
+    const wasActiveRef = useRef(false);
 
     const lottieRef = useRef<LottieRefCurrentProps>(null);
 
@@ -34,12 +36,19 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
     }, [isSpeaking, lottieRef])
 
     useEffect(() => {
-        const onCallStart = () => setCallStatus(CallStatus.ACTIVE);
+        const onCallStart = () => {
+            wasActiveRef.current = true;
+            setCallError(null);
+            setCallStatus(CallStatus.ACTIVE);
+        };
 
         const onCallEnd = () => {
             setCallStatus(CallStatus.FINISHED);
-            addToSessionHistory(companionId)
-        }
+            if (wasActiveRef.current) {
+                addToSessionHistory(companionId);
+                wasActiveRef.current = false;
+            }
+        };
 
         const onMessage = (message: Message) => {
             if(message.type === 'transcript' && message.transcriptType === 'final') {
@@ -51,7 +60,11 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
         const onSpeechStart = () => setIsSpeaking(true);
         const onSpeechEnd = () => setIsSpeaking(false);
 
-        const onError = (error: Error) => console.log('Error', error);
+        const onError = (error: Error) => {
+            console.log('Error', error);
+            setCallError(error?.message || 'An error occurred during the session. Please check your VAPI configuration.');
+            setCallStatus(CallStatus.FINISHED);
+        };
 
         vapi.on('call-start', onCallStart);
         vapi.on('call-end', onCallEnd);
@@ -77,6 +90,8 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
     }
 
     const handleCall = async () => {
+        setCallError(null);
+        wasActiveRef.current = false;
         setCallStatus(CallStatus.CONNECTING)
 
         const assistantOverrides = {
@@ -142,6 +157,12 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
                     </button>
                 </div>
             </section>
+
+            {callError && (
+                <div className="mx-4 my-2 rounded-lg bg-red-100 border border-red-400 text-red-700 px-4 py-3 text-sm">
+                    <strong>Session error:</strong> {callError}
+                </div>
+            )}
 
             <section className="transcript">
                 <div className="transcript-message no-scrollbar">
