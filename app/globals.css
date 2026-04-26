@@ -180,16 +180,21 @@ body {
     @apply rounded-4xl border border-black dark:border-white/20;
   }
   .cta-section {
-    @apply text-white rounded-4xl px-7 py-10 flex flex-col items-center text-center gap-5 w-1/3 shrink-0 max-lg:w-full
-      bg-linear-to-br from-[#1a1a3e] to-[#0f0f2a]
-      dark:from-[#0f0f2a] dark:to-[#050510]
-      border border-white/10
-      shadow-[0_0_40px_rgba(139,92,246,0.15)]
-      transition-all duration-500
-      hover:shadow-[0_0_60px_rgba(139,92,246,0.3)] hover:scale-[1.02];
+    @apply rounded-4xl px-7 py-10 flex flex-col items-center text-center gap-5 w-1/3 shrink-0 max-lg:w-full
+      bg-white/70 dark:bg-white/4
+      border border-black/10 dark:border-white/10
+      backdrop-blur-md
+      shadow-sm;
   }
   .cta-badge {
-    @apply bg-cta-gold rounded-4xl px-3 py-1.5 text-black;
+    @apply border border-black/40 dark:border-white/40 rounded-4xl px-3 py-1.5 text-black dark:text-white bg-transparent text-xs font-medium;
+  }
+  .cta-btn {
+    @apply bg-[#7c3aed] text-white rounded-xl cursor-pointer px-6 py-3 text-sm font-semibold flex items-center gap-2
+      shadow-[0_0_24px_rgba(124,58,237,0.45)]
+      transition-all duration-300
+      hover:bg-[#6d28d9] hover:scale-[1.05] hover:shadow-[0_0_36px_rgba(124,58,237,0.7)]
+      active:scale-[0.97];
   }
   .btn-primary {
     @apply bg-black dark:bg-white/10 dark:border dark:border-white/20 dark:text-white
