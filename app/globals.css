@@ -147,10 +147,10 @@ body {
     @apply flex gap-6 justify-between items-start w-full max-lg:flex-col max-lg:items-stretch;
   }
   .companions-grid {
-    @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5 w-full mt-2;
+    @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 w-full mt-2;
   }
   .companion-card {
-    @apply relative flex flex-col rounded-4xl px-5 py-5 gap-5 w-full justify-between overflow-hidden
+    @apply relative flex flex-col rounded-xl px-3 py-2.5 gap-2 w-full justify-between overflow-hidden
       border border-black/15 dark:border-white/10
       bg-white/70 dark:bg-white/5
       backdrop-blur-md
@@ -160,7 +160,7 @@ body {
     will-change: transform;
   }
   .subject-badge {
-    @apply rounded-2xl text-sm px-3 py-1 capitalize font-semibold
+    @apply rounded-xl text-xs px-2 py-0.5 capitalize font-semibold
       bg-black/80 text-white
       dark:bg-white/10 dark:text-white dark:border dark:border-white/20
       backdrop-blur-sm
@@ -193,13 +193,13 @@ body {
   }
   .btn-primary {
     @apply bg-black dark:bg-white/10 dark:border dark:border-white/20 dark:text-white
-      text-white rounded-xl cursor-pointer px-4 py-2 flex items-center gap-2
+      text-white rounded-lg cursor-pointer px-3 py-1.5 text-xs flex items-center gap-1.5
       transition-all duration-300
       hover:scale-[1.03] hover:shadow-[0_0_16px_rgba(139,92,246,0.5)]
       active:scale-[0.97];
   }
   .navbar {
-    @apply flex items-center justify-between mx-auto w-full px-14 py-4
+    @apply flex items-center justify-between mx-auto w-full px-14 py-1.5
       bg-white/80 dark:bg-[#0a0a1a]/80
       backdrop-blur-xl
       border-b border-black/8 dark:border-white/8
@@ -224,36 +224,146 @@ body {
     @apply items-center justify-center flex flex-col gap-4 w-full min-2xl:w-1/2 pt-20 text-center;
   }
 
+  /* ── Session page main (overrides global main base styles) ── */
+  main.session-page-main {
+    @apply gap-2 pt-3 pb-2 overflow-hidden;
+    height: calc(100dvh - 4.5rem);
+  }
+
+  /* ── Session header ─────────────────────────────────────── */
+  .session-header {
+    @apply flex justify-between items-center px-4 py-2 max-md:flex-col max-md:gap-2 rounded-xl relative shrink-0;
+    background: linear-gradient(135deg, rgba(139,92,246,0.07) 0%, rgba(34,211,238,0.04) 100%);
+    border: 1px solid rgba(139,92,246,0.22);
+  }
+  .session-header::before {
+    content: '';
+    @apply absolute top-0 left-0 right-0 h-px rounded-t-2xl;
+    background: linear-gradient(90deg, transparent 0%, #8B5CF6 30%, #22D3EE 60%, #FB923C 80%, transparent 100%);
+  }
+
+  /* ── Companion panel ─────────────────────────────────────── */
   .companion-section {
-    @apply border-2 border-orange-500 w-2/3 max-sm:w-full flex flex-col gap-4 justify-center items-center rounded-lg;
+    @apply w-2/3 max-sm:w-full flex flex-col gap-2 justify-center items-center rounded-2xl relative py-3 px-6;
+    background: linear-gradient(160deg, rgba(139,92,246,0.09) 0%, rgba(15,15,42,0.35) 100%);
+    border: 1px solid rgba(139,92,246,0.25);
+    backdrop-filter: blur(24px);
+    box-shadow: 0 0 50px rgba(139,92,246,0.08), inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+
+  .session-status {
+    @apply flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] px-3 py-1.5 rounded-full shrink-0;
+  }
+
+  /* Orbital wrapper — rings are positioned relative to this */
+  .avatar-orbit-wrapper {
+    @apply relative flex items-center justify-center;
   }
 
   .companion-avatar {
-    @apply size-[300px] flex items-center justify-center rounded-lg max-sm:size-[100px] mt-4;
+    @apply size-28 rounded-full overflow-hidden flex items-center justify-center max-sm:size-20 relative;
+    transition: box-shadow 0.8s ease;
   }
+  .companion-avatar-inactive   { box-shadow: 0 0 24px rgba(139,92,246,0.35), 0 0 0 1px rgba(139,92,246,0.2); }
+  .companion-avatar-connecting { box-shadow: 0 0 40px rgba(251,146,60,0.55), 0 0 80px rgba(251,146,60,0.15); }
+  .companion-avatar-active     { box-shadow: 0 0 50px rgba(34,211,238,0.5), 0 0 100px rgba(139,92,246,0.2); }
+  .companion-avatar-finished   { box-shadow: 0 0 18px rgba(139,92,246,0.15); }
+
   .companion-lottie {
-    @apply size-[300px] max-sm:size-[100px];
+    @apply size-28 max-sm:size-20;
   }
 
+  /* Orbital rings — positioned relative to .avatar-orbit-wrapper */
+  .avatar-ring {
+    @apply absolute rounded-full border pointer-events-none;
+    animation: avatar-orbit 10s linear infinite;
+  }
+  .avatar-ring-1 {
+    @apply -inset-2 border-purple-400/30;
+    animation-duration: 10s;
+  }
+  .avatar-ring-2 {
+    @apply -inset-4 border-cyan-400/20;
+    animation-duration: 16s;
+    animation-direction: reverse;
+  }
+  .avatar-ring-3 {
+    @apply -inset-6 border-orange-400/15;
+    animation-duration: 24s;
+  }
+
+  /* ── User panel ──────────────────────────────────────────── */
   .user-section {
-    @apply flex flex-col gap-4 w-1/3 max-sm:w-full max-sm:flex-row;
+    @apply flex flex-col gap-3 w-1/3 max-sm:w-full max-sm:flex-row;
   }
   .user-avatar {
-    @apply border-2 border-black dark:border-white/20 flex flex-col gap-4 items-center rounded-lg py-8 max-sm:hidden;
+    @apply flex flex-col gap-3 items-center rounded-2xl py-5 px-4 max-sm:hidden;
+    background: linear-gradient(160deg, rgba(34,211,238,0.07) 0%, rgba(59,130,246,0.04) 100%);
+    border: 1px solid rgba(34,211,238,0.18);
+    backdrop-filter: blur(20px);
   }
 
   .btn-mic {
-    @apply border-2 border-black dark:border-white/20 rounded-lg flex flex-col gap-2 items-center py-8 max-sm:py-2 cursor-pointer w-full;
+    @apply rounded-2xl flex flex-col gap-2 items-center py-4 max-sm:py-2 cursor-pointer w-full transition-all duration-300;
+    background: rgba(251,146,60,0.05);
+    border: 1px solid rgba(251,146,60,0.18);
+  }
+  .btn-mic:hover:not(:disabled) {
+    background: rgba(251,146,60,0.1);
+    border-color: rgba(251,146,60,0.4);
+    box-shadow: 0 0 24px rgba(251,146,60,0.15);
+  }
+  .btn-mic:disabled {
+    @apply opacity-40 cursor-not-allowed;
   }
 
-  .transcript {
-    @apply relative flex flex-col gap-4 w-full items-center pt-10 flex-grow overflow-hidden;
+  /* ── Call button ─────────────────────────────────────────── */
+  .btn-call {
+    @apply rounded-xl py-3 px-4 cursor-pointer transition-all duration-300 w-full text-white font-semibold text-sm tracking-wide;
   }
-  .transcript-message {
-    @apply overflow-y-auto w-full flex flex-col gap-4 max-sm:gap-2 pr-2 h-full text-2xl;
+  .btn-call:active:not(:disabled) { transform: scale(0.97); }
+  .btn-call-start {
+    background: linear-gradient(135deg, #7C3AED 0%, #FB923C 100%);
+    box-shadow: 0 4px 24px rgba(124,58,237,0.4), 0 0 0 1px rgba(124,58,237,0.3);
+  }
+  .btn-call-start:hover {
+    box-shadow: 0 4px 40px rgba(124,58,237,0.65), 0 0 0 1px rgba(251,146,60,0.4);
+    transform: translateY(-1px);
+  }
+  .btn-call-connecting {
+    background: linear-gradient(135deg, #FB923C 0%, #FBBF24 100%);
+    box-shadow: 0 4px 24px rgba(251,146,60,0.4);
+    @apply animate-pulse cursor-not-allowed;
+  }
+  .btn-call-end {
+    background: linear-gradient(135deg, #991B1B 0%, #7C3AED 100%);
+    box-shadow: 0 4px 24px rgba(153,27,27,0.4), 0 0 0 1px rgba(220,38,38,0.3);
+  }
+  .btn-call-end:hover {
+    box-shadow: 0 4px 40px rgba(153,27,27,0.65);
+    transform: translateY(-1px);
+  }
+
+  /* ── Transcript ──────────────────────────────────────────── */
+  .transcript {
+    @apply relative w-full flex-1 min-h-0 overflow-hidden;
+  }
+  .transcript-block {
+    @apply w-full rounded-2xl px-5 py-4 flex flex-col gap-1.5 overflow-hidden;
+    background: rgba(139,92,246,0.05);
+    border: 1px solid rgba(139,92,246,0.15);
+    backdrop-filter: blur(12px);
+  }
+  .transcript-line {
+    @apply text-sm leading-snug w-full overflow-hidden text-ellipsis whitespace-nowrap;
+    animation: msg-enter 0.22s ease;
+  }
+  .transcript-line-live {
+    @apply text-sm leading-snug w-full overflow-hidden text-ellipsis whitespace-nowrap italic opacity-70;
   }
   .transcript-fade {
-    @apply pointer-events-none absolute bottom-0 left-0 right-0 h-40 max-sm:h-20 bg-gradient-to-t from-background via-background/90 to-transparent z-10;
+    @apply pointer-events-none absolute bottom-0 left-0 right-0 h-6 z-10;
+    background: linear-gradient(to top, var(--background) 10%, transparent);
   }
 }
 
@@ -265,4 +375,14 @@ body {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+}
+
+@keyframes avatar-orbit {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes msg-enter {
+  from { transform: translateY(-5px); }
+  to   { transform: translateY(0); }
 }

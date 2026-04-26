@@ -20,27 +20,27 @@ const CompanionSession = async ({ params }: CompanionSessionPageProps) => {
     if(!name) redirect('/companions')
 
     return (
-        <main>
-            <article className="flex rounded-border justify-between p-6 max-md:flex-col">
-                <div className="flex items-center gap-2">
-                    <div className="size-[72px] flex items-center justify-center rounded-lg max-md:hidden" style={{ backgroundColor: getSubjectColor(subject)}}>
-                        <Image src={`/icons/${subject}.svg`} alt={subject} width={35} height={35} />
+        <main className="session-page-main">
+            <article className="session-header">
+                <div className="flex items-center gap-3">
+                    <div className="size-17 flex items-center justify-center rounded-xl max-md:hidden relative overflow-hidden shrink-0" style={{ backgroundColor: getSubjectColor(subject) }}>
+                        <div className="absolute inset-0 bg-linear-to-br from-white/15 to-transparent" />
+                        <Image src={`/icons/${subject}.svg`} alt={subject} width={34} height={34} />
                     </div>
-
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                            <p className="font-bold text-2xl">
-                                {name}
-                            </p>
-                            <div className="subject-badge max-sm:hidden">
-                                {subject}
-                            </div>
+                            <p className="font-bold text-lg">{name}</p>
+                            <div className="subject-badge max-sm:hidden">{subject}</div>
                         </div>
-                        <p className="text-lg">{topic}</p>
+                        <p className="text-xs text-foreground/60">{topic}</p>
                     </div>
                 </div>
-                <div className="items-start text-2xl max-md:hidden">
-                    {duration} minutes
+                <div
+                    className="flex items-center gap-2 text-sm font-semibold max-md:hidden shrink-0 px-4 py-2 rounded-full"
+                    style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.22)', color: 'rgb(196,181,253)' }}
+                >
+                    <span>&#9201;</span>
+                    <span>{duration} min</span>
                 </div>
             </article>
 

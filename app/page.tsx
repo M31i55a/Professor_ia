@@ -18,33 +18,34 @@ const Page = async () => {
 
   return (
     <main className="flex flex-col gap-8">
-      <section>
-        <h1 className="mb-5">Popular Companions</h1>
-        {popularCompanions.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {popularCompanions.map((companion) => (
-              <CompanionCard
-                key={companion.id}
-                {...companion}
-                color={getSubjectColor(companion.subject)}
-                description=""
-                isBookmarked={bookmarkedIds.includes(String(companion.id))}
-                isOwner={companion.author === userId}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="text-muted-foreground py-6">No popular companions yet. Complete a session to see them here.</p>
-        )}
-      </section>
-
       <section className="home-section">
-        <CompanionsList
-          title="Recently Created Companions"
-          companions={recentSessions}
-          classNames="flex-1 w-full"
-        />
-        <CTA />
+        <div className="flex flex-col gap-5 flex-1 min-w-0">
+          <div>
+            <h1 className="mb-4">Popular Companions</h1>
+            {popularCompanions.length > 0 ? (
+              <div className="grid grid-cols-3 max-sm:grid-cols-2 gap-2.5">
+                {popularCompanions.map((companion) => (
+                  <CompanionCard
+                    key={companion.id}
+                    {...companion}
+                    color={getSubjectColor(companion.subject)}
+                    description=""
+                    isBookmarked={bookmarkedIds.includes(String(companion.id))}
+                    isOwner={companion.author === userId}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground py-6">No popular companions yet. Complete a session to see them here.</p>
+            )}
+          </div>
+          <CompanionsList
+            title="Recently Created Companions"
+            companions={recentSessions}
+            classNames="w-full"
+          />
+        </div>
+        <CTA className="self-start" />
       </section>
     </main>
   )

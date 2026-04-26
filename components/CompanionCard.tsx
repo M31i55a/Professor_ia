@@ -22,34 +22,26 @@ const CompanionCard = ({id, name, topic, subject, duration, color, description, 
   return (
     <TiltCard className="companion-card" style={{ backgroundColor: color }}>
       {/* Glossy top-edge highlight */}
-      <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/60 to-transparent rounded-t-4xl pointer-events-none" />
+      <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/60 to-transparent rounded-t-xl pointer-events-none" />
       {/* Dark overlay in dark mode */}
-      <div className="hidden dark:block absolute inset-0 rounded-4xl bg-black/25 pointer-events-none z-0" />
+      <div className="hidden dark:block absolute inset-0 rounded-xl bg-black/25 pointer-events-none z-0" />
 
       <div className="relative z-10 flex justify-between items-center">
         <div className="subject-badge">{subject}</div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <Image src="/icons/clock.svg" alt="duration" width={10} height={10} />
+          <span className="text-xs font-medium">{duration}m</span>
           {isOwner && <DeleteButton companionId={String(id)} />}
           <BookmarkButton companionId={String(id)} isBookmarked={isBookmarked} />
         </div>
       </div>
 
-      <h2 className="relative z-10 text-2xl font-bold">{name}</h2>
-      <p className="relative z-10 text-sm">{topic}</p>
-      <div className="relative z-10 flex items-center gap-2">
-        <Image
-          src="/icons/clock.svg"
-          alt="duration"
-          width={13.5}
-          height={13.5}
-        />
-        <p className="text-sm">{duration} minutes</p>
-      </div>
-
+      <h2 className="relative z-10 text-sm font-bold leading-tight">{name}</h2>
+      <p className="relative z-10 text-xs text-black/70 dark:text-white/70 line-clamp-1">{topic}</p>
       <Link href={`/companions/${id}`} className="relative z-10 w-full">
         <button className="btn-primary w-full justify-center bg-black">
-          Launch Lesson
+          Launch
         </button>
       </Link>
     </TiltCard>
