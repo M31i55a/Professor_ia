@@ -17,7 +17,7 @@ export const createCompanion = async (formData: CreateCompanion) => {
             throw new Error('Unauthorized - Please sign in first');
         }
 
-        const { name, subject, topic, style, voice, duration } = formData;
+        const { name, subject, topic, style, voice, duration, pdfContent } = formData;
 
         // Validate required fields
         if (!name || !subject || !topic || !style || !voice || !duration) {
@@ -41,10 +41,10 @@ export const createCompanion = async (formData: CreateCompanion) => {
         console.log('Creating companion for user:', userId);
 
         const result = await query(
-            `INSERT INTO companions (name, subject, topic, style, voice, duration, author)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)
-             RETURNING id, name, subject, topic, style, voice, duration, author, created_at`,
-            [name, subject, topic, style, voice, duration, userId]
+            `INSERT INTO companions (name, subject, topic, style, voice, duration, author, pdf_content)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             RETURNING id, name, subject, topic, style, voice, duration, author, pdf_content, created_at`,
+            [name, subject, topic, style, voice, duration, userId, pdfContent ?? null]
         );
 
         if (result.rows.length === 0) {

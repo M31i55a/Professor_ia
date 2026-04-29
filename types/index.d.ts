@@ -28,11 +28,12 @@ type Companion = Models.DocumentList<Models.Document> & {
 
 interface CreateCompanion {
   name: string;
-  subject: string; 
+  subject: string;
   topic: string;
   style: string;
   voice: string;
   duration: number;
+  pdfContent?: string;
 }
 
 interface GetAllCompanions {
@@ -80,4 +81,5 @@ interface CompanionComponentProps {
   userImage: string;
   voice: string;
   style: string;
+  pdf_content?: string | null;
 }
