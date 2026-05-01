@@ -8,7 +8,10 @@ export const maxDuration = 60;
 // (The serverActions.bodySizeLimit in next.config only covers Server Actions.)
 export const dynamic = "force-dynamic";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1",
+});
 
 // Valid subjects that the companion system recognises
 const VALID_SUBJECTS = [
@@ -74,7 +77,7 @@ export async function POST(req: NextRequest) {
 
     // Ask GPT-4o-mini to classify the document and write a study summary
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "openai/gpt-4o-mini",
       messages: [
         {
           role: "system",

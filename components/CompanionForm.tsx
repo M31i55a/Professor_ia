@@ -259,7 +259,7 @@ const CompanionForm = () => {
                     </div>
 
                     {/* ── RIGHT: content source ── */}
-                    <div className="flex flex-col gap-3 min-h-[420px]">
+                    <div className="flex flex-col gap-3 min-h-105">
 
                         {/* Mode toggle */}
                         <div>

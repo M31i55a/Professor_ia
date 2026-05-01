@@ -53,8 +53,8 @@ export const configureAssistant = (voice: string, style: string, pdfContent?: st
       useSpeakerBoost: true,
     },
     model: {
-      provider: "openai",
-      model: "gpt-4",
+      provider: "openrouter",
+      model: "openai/gpt-4o",
       messages: [
         {
           role: "system",
