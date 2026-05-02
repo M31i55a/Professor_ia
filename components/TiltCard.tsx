@@ -27,7 +27,7 @@ const TiltCard = ({ children, className, style }: TiltCardProps) => {
     });
 
     return () => {
-      el.vanillaTilt?.destroy();
+      (el as HTMLDivElement & { vanillaTilt?: { destroy: () => void } }).vanillaTilt?.destroy();
     };
   }, []);
 
