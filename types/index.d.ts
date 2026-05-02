@@ -36,6 +36,12 @@ interface CreateCompanion {
   pdfContent?: string;
 }
 
+interface TextChunk {
+  text: string;
+  index: number;
+  wordCount: number;
+}
+
 interface GetAllCompanions {
   limit?: number;
   page?: number;

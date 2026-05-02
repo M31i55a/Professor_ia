@@ -36,3 +36,13 @@ declare module 'vanilla-tilt' {
 
   export default VanillaTilt;
 }
+
+// Augment the global HTMLElement so refs typed as HTMLDivElement etc. also
+// recognise the vanillaTilt property attached at runtime.
+declare global {
+  interface HTMLElement {
+    vanillaTilt?: {
+      destroy: () => void;
+    };
+  }
+}

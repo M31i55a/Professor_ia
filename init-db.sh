@@ -12,5 +12,9 @@ sleep 5
 echo "Initializing database schema..."
 docker exec professor_ia_db psql -U postgres -d professor_ia -f /dev/stdin < ./migrations/init.sql
 
+echo "Applying additional migrations..."
+docker exec professor_ia_db psql -U postgres -d professor_ia -f /dev/stdin < ./migrations/add_pdf_content.sql
+docker exec professor_ia_db psql -U postgres -d professor_ia -f /dev/stdin < ./migrations/add_book_chunks.sql
+
 echo "Database initialized successfully!"
 echo "PostgreSQL is running on localhost:5432"

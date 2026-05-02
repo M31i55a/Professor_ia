@@ -8,6 +8,40 @@ export const maxDuration = 60;
 // (The serverActions.bodySizeLimit in next.config only covers Server Actions.)
 export const dynamic = "force-dynamic";
 
+// ---------------------------------------------------------------------------
+// Chunking helpers (mirrors the jsm_bookified splitIntoSegments approach)
+// ---------------------------------------------------------------------------
+interface TextChunk {
+  text: string;
+  index: number;
+  wordCount: number;
+}
+
+function splitIntoChunks(
+  text: string,
+  wordsPerChunk = 500,
+  overlapWords = 50
+): TextChunk[] {
+  const words = text.split(/\s+/).filter((w) => w.length > 0);
+  const chunks: TextChunk[] = [];
+  let chunkIndex = 0;
+  let startIndex = 0;
+
+  while (startIndex < words.length) {
+    const endIndex = Math.min(startIndex + wordsPerChunk, words.length);
+    const chunkWords = words.slice(startIndex, endIndex);
+    chunks.push({
+      text: chunkWords.join(" "),
+      index: chunkIndex,
+      wordCount: chunkWords.length,
+    });
+    chunkIndex++;
+    if (endIndex >= words.length) break;
+    startIndex = endIndex - overlapWords;
+  }
+  return chunks;
+}
+
 const openai = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
   baseURL: "https://openrouter.ai/api/v1",
@@ -72,10 +106,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Truncate to ~12 000 chars before sending to OpenAI to stay within token limits
-    const textForAnalysis = rawText.slice(0, 12000);
+    // Skip the front matter (title page, copyright, TOC) by starting ~8% into
+    // the document (capped at 3 000 chars). This brings the analysis window
+    // into the actual educational content much sooner.
+    const frontMatterSkip = Math.min(3000, Math.floor(rawText.length * 0.08));
+    const contentText = rawText.slice(frontMatterSkip);
 
-    // Ask GPT-4o-mini to classify the document and write a study summary
+    // Send up to 20 000 chars of real content to the model for a thorough analysis.
+    const textForAnalysis = contentText.slice(0, 20000);
+
+    // Ask GPT-4o-mini to classify the document and write a comprehensive study summary
     const completion = await openai.chat.completions.create({
       model: "openai/gpt-4o-mini",
       messages: [
@@ -85,7 +125,7 @@ export async function POST(req: NextRequest) {
 Given document text, return a JSON object with EXACTLY these three fields:
 1. "subject" – one of: ${VALID_SUBJECTS.join(", ")} (choose the closest match)
 2. "topic"   – a concise, specific title describing the main topic (max 60 characters)
-3. "summary" – a rich but concise summary (max 600 characters) that an AI voice tutor will use to teach the student. Write it in the third person, e.g. "This document covers …".`,
+3. "summary" – a comprehensive teaching summary (max 2000 characters) that an AI voice tutor will use to teach the student. Cover the key concepts, main ideas, important definitions, and core lessons from the material. Write it as structured teaching notes, not a book blurb.`,
         },
         {
           role: "user",
@@ -93,7 +133,7 @@ Given document text, return a JSON object with EXACTLY these three fields:
         },
       ],
       response_format: { type: "json_object" },
-      max_tokens: 600,
+      max_tokens: 1200,
     });
 
     const aiResult = JSON.parse(
@@ -114,22 +154,19 @@ Given document text, return a JSON object with EXACTLY these three fields:
         ? aiResult.topic.trim()
         : "General Study Material";
 
-    const summary =
-      typeof aiResult.summary === "string" ? aiResult.summary.trim() : "";
+    // Build a compact teaching-notes summary stored in the companions row.
+    // This is injected as a brief context in the VAPI system prompt.
+    // Detailed retrieval happens at query-time via the searchContent tool.
+    const pdfContent =
+      typeof aiResult.summary === "string" && aiResult.summary.trim().length > 0
+        ? `=== TEACHING NOTES ===\n${aiResult.summary.trim()}`
+        : "";
 
-    // Build the context string that will be stored in the DB and passed to
-    // the VAPI assistant as part of its system prompt (kept ≤ 3 000 chars).
-    const pdfContent = [
-      "=== DOCUMENT SUMMARY ===",
-      summary,
-      "",
-      "=== CONTENT EXCERPT ===",
-      rawText.slice(0, 2000),
-    ]
-      .join("\n")
-      .slice(0, 3000);
+    // Chunk the FULL document text (no truncation) for RAG storage.
+    // The companion's chunks are saved separately after the companion is created.
+    const chunks = splitIntoChunks(contentText);
 
-    return NextResponse.json({ subject, topic, pdfContent });
+    return NextResponse.json({ subject, topic, pdfContent, chunks });
   } catch (err) {
     console.error("[extract-pdf] error:", err);
     return NextResponse.json(

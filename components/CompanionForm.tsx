@@ -21,7 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { createCompanion } from "@/lib/actions/companion.actions"
+import { createCompanion, saveCompanionChunks } from "@/lib/actions/companion.actions"
 import { redirect } from "next/navigation"
 import Image from "next/image"
 import { subjects } from "@/constants"
@@ -32,6 +32,7 @@ interface PdfState {
     topic: string
     pdfContent: string
     fileName: string
+    chunks: TextChunk[]
 }
 
 type ContentMode = "pdf" | "manual"
@@ -97,6 +98,7 @@ const CompanionForm = () => {
                 topic: data.topic,
                 pdfContent: data.pdfContent,
                 fileName: file.name,
+                chunks: Array.isArray(data.chunks) ? data.chunks : [],
             })
         } catch {
             setPdfError("Network error – could not reach the server. Please try again.")
@@ -145,6 +147,10 @@ const CompanionForm = () => {
             })
 
             if (companion) {
+                // Save all PDF chunks for RAG retrieval (does nothing for manual companions)
+                if (pdfState?.chunks?.length) {
+                    await saveCompanionChunks(companion.id, pdfState.chunks)
+                }
                 redirect(`/companions/${companion.id}`)
             } else {
                 console.error("Failed to create a companion")

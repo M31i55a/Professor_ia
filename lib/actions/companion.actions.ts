@@ -44,7 +44,7 @@ export const createCompanion = async (formData: CreateCompanion) => {
             `INSERT INTO companions (name, subject, topic, style, voice, duration, author, pdf_content)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
              RETURNING id, name, subject, topic, style, voice, duration, author, pdf_content, created_at`,
-            [name, subject, topic, style, voice, duration, userId, pdfContent ?? null]
+            [name, subject, topic, style, voice, duration, userId, pdfContent ? pdfContent.replace(/\u0000/g, '') : null]
         );
 
         if (result.rows.length === 0) {
@@ -352,4 +352,56 @@ export const getMyBookmarkedIds = async (): Promise<string[]> => {
     );
 
     return result.rows.map((r: any) => String(r.companion_id));
+}
+
+// ---------------------------------------------------------------------------
+// RAG: store chunked PDF content for a companion
+// ---------------------------------------------------------------------------
+const CHUNK_BATCH_SIZE = 100; // max chunks per INSERT to stay within pg param limits
+
+export const getCompanionChunks = async (companionId: string | number, limit = 60): Promise<string> => {
+    try {
+        const result = await query(
+            `SELECT content FROM companion_chunks
+             WHERE companion_id = $1
+             ORDER BY chunk_index ASC
+             LIMIT $2`,
+            [companionId, limit]
+        );
+        if (result.rows.length === 0) return '';
+        return result.rows.map((r: { content: string }) => r.content).join('\n\n---\n\n');
+    } catch {
+        return '';
+    }
+}
+
+export const saveCompanionChunks = async (
+    companionId: number,
+    chunks: TextChunk[]
+) => {
+    if (!chunks || chunks.length === 0) return;
+
+    // Insert in batches to avoid exceeding PostgreSQL's parameter limit
+    for (let batchStart = 0; batchStart < chunks.length; batchStart += CHUNK_BATCH_SIZE) {
+        const batch = chunks.slice(batchStart, batchStart + CHUNK_BATCH_SIZE);
+
+        // Build a multi-row VALUES clause:
+        // ($1, $2, $3, $4), ($1, $5, $6, $7), ...
+        // companion_id is always $1; each chunk adds 3 params (index, content, wordCount)
+        const params: (number | string)[] = [companionId];
+        const valueClauses = batch.map((chunk, i) => {
+            const base = 2 + i * 3;
+            params.push(chunk.index, chunk.text.replace(/\u0000/g, ''), chunk.wordCount);
+            return `($1, $${base}, $${base + 1}, $${base + 2})`;
+        });
+
+        await query(
+            `INSERT INTO companion_chunks (companion_id, chunk_index, content, word_count)
+             VALUES ${valueClauses.join(", ")}
+             ON CONFLICT (companion_id, chunk_index) DO UPDATE
+               SET content = EXCLUDED.content,
+                   word_count = EXCLUDED.word_count`,
+            params
+        );
+    }
 }

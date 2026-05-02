@@ -1,7 +1,7 @@
 'use client';
 
 import {useEffect, useRef, useState} from 'react'
-import {cn, configureAssistant, getSubjectColor} from "@/lib/utils";
+import {cn, configureAssistant, buildSystemPrompt, getVoiceId, getSubjectColor} from "@/lib/utils";
 import {vapi} from "@/lib/vapi.sdk";
 import Image from "next/image";
 import Lottie, {LottieRefCurrentProps} from "lottie-react";
@@ -69,9 +69,15 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
         const onSpeechStart = () => setIsSpeaking(true);
         const onSpeechEnd = () => setIsSpeaking(false);
 
-        const onError = (error: Error) => {
-            console.log('Error', error);
-            setCallError(error?.message || 'An error occurred during the session. Please check your VAPI configuration.');
+        const onError = (error: any) => {
+            console.warn('VAPI error', error);
+            const toStr = (v: unknown) => (typeof v === 'string' && v ? v : null);
+            const message =
+                toStr(error?.error?.message) ||
+                toStr(error?.message) ||
+                (typeof error === 'string' ? error : null) ||
+                'An error occurred during the session. Please check your VAPI configuration.';
+            setCallError(message);
             setCallStatus(CallStatus.FINISHED);
         };
 
@@ -103,13 +109,38 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
         wasActiveRef.current = false;
         setCallStatus(CallStatus.CONNECTING)
 
-        const assistantOverrides = {
-            variableValues: { subject, topic, style },
-            clientMessages: ["transcript"] as any,
-            serverMessages: [] as any,
-        }
+        const assistantId = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID;
 
-        vapi.start(configureAssistant(voice, style, pdf_content), assistantOverrides)
+        if (assistantId) {
+            // Dashboard assistant mode (like jsm_bookified): the searchContent tool
+            // is registered on the VAPI dashboard. The AI fetches relevant chunks
+            // on demand — no book content injected into the prompt, works for any size.
+            vapi.start(assistantId as any, {
+                variableValues: { subject, topic, style, companionId: String(companionId) },
+                model: {
+                    messages: [{ role: 'system', content: buildSystemPrompt(subject, topic, style, pdf_content) }],
+                } as any,
+                voice: {
+                    provider: '11labs',
+                    voiceId: getVoiceId(voice, style),
+                    stability: 0.4,
+                    similarityBoost: 0.8,
+                    speed: 1,
+                    style: 0.5,
+                    useSpeakerBoost: true,
+                } as any,
+                clientMessages: ['transcript'] as any,
+                serverMessages: [] as any,
+            });
+        } else {
+            // Inline assistant mode (fallback): no tool support, uses pdfContent summary only.
+            const assistantOverrides = {
+                variableValues: { subject, topic, style },
+                clientMessages: ['transcript'] as any,
+                serverMessages: [] as any,
+            }
+            vapi.start(configureAssistant(voice, style, pdf_content, companionId), assistantOverrides)
+        }
     }
 
     const handleDisconnect = () => {
@@ -211,7 +242,7 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
 
             {callError && (
                 <div className="rounded-xl px-4 py-3 text-sm" style={{ background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.25)', color: 'rgb(252,165,165)' }}>
-                    <strong>Session error:</strong> {callError}
+                    <strong>Session error:</strong> {typeof callError === 'string' ? callError : JSON.stringify(callError)}
                 </div>
             )}
 

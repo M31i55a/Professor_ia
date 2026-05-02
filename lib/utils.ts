@@ -23,16 +23,42 @@ export function getSubjectColor(subject: string): string {
 }
 
 
-export const configureAssistant = (voice: string, style: string, pdfContent?: string | null) => {
-  const voiceId = voices[voice as keyof typeof voices][
-          style as keyof (typeof voices)[keyof typeof voices]
-          ] || "sarah";
+export const getVoiceId = (voice: string, style: string): string => {
+  return voices[voice as keyof typeof voices]?.[
+    style as keyof (typeof voices)[keyof typeof voices]
+  ] || "sarah";
+};
 
-  // Build the system prompt. When PDF content is available, inject it so
-  // the tutor stays within the scope of the uploaded study material.
-  const pdfSection = pdfContent
-    ? `\n\nYou have been given the following study material uploaded by the student. Base your entire teaching session on this content. Only discuss topics related to it — if the student asks about something completely unrelated, politely redirect them back to the material.\n\n${pdfContent}\n`
+export const buildSystemPrompt = (
+  subject: string,
+  topic: string,
+  style: string,
+  pdfContent?: string | null
+): string => {
+  const knowledgeSection = pdfContent
+    ? `\n\n===== STUDENT STUDY MATERIAL (SUMMARY) =====\nThe student uploaded study material. Use this as your primary knowledge base. For detailed questions, use the searchContent tool to retrieve specific passages.\n\n${pdfContent}\n===== END OF SUMMARY =====\n`
     : "";
+
+  return `You are a tutor running a real-time voice session with a student on the topic "${topic}" (subject: ${subject}).${knowledgeSection}
+
+Tutor rules:
+- If study material was uploaded, base content answers on it. Use the searchContent tool to find specific passages when the student asks about details.
+- If the student asks something not in the material, say: "That's not covered in your study material, but it's worth exploring further."
+- Keep the conversation flowing and check the student's understanding periodically.
+- Break down the topic into smaller parts and teach one part at a time.
+- Adapt your tone to the requested style: ${style}.
+- Keep responses SHORT - this is a voice conversation, not a lecture.
+- Do not use special characters, markdown, bullet points, or formatting - voice only.`;
+};
+
+export const configureAssistant = (
+  voice: string,
+  style: string,
+  pdfContent?: string | null,
+  companionId?: number | string | null
+) => {
+  const voiceId = getVoiceId(voice, style);
+  const systemContent = buildSystemPrompt("{{ subject }}", "{{ topic }}", "{{ style }}", pdfContent);
 
   const vapiAssistant: CreateAssistantDTO = {
     name: "Companion",
@@ -58,16 +84,7 @@ export const configureAssistant = (voice: string, style: string, pdfContent?: st
       messages: [
         {
           role: "system",
-          content: `You are a highly knowledgeable tutor teaching a real-time voice session with a student. Your goal is to teach the student about the topic and subject.${pdfSection}
-                    Tutor Guidelines:
-                    Stick to the given topic - {{ topic }} and subject - {{ subject }} and teach the student about it.
-                    Keep the conversation flowing smoothly while maintaining control.
-                    From time to time make sure that the student is following you and understands you.
-                    Break down the topic into smaller parts and teach the student one part at a time.
-                    Keep your style of conversation {{ style }}.
-                    Keep your responses short, like in a real voice conversation.
-                    Do not include any special characters in your responses - this is a voice conversation.
-              `,
+          content: systemContent,
         },
       ],
     },
