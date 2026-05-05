@@ -381,26 +381,33 @@ export const saveCompanionChunks = async (
 ) => {
     if (!chunks || chunks.length === 0) return;
 
-    // Insert in batches to avoid exceeding PostgreSQL's parameter limit
+    // Insert in batches to avoid exceeding PostgreSQL's parameter limit.
+    // Each chunk now has 4 params (index, content, wordCount, embedding) + 1 shared companionId.
     for (let batchStart = 0; batchStart < chunks.length; batchStart += CHUNK_BATCH_SIZE) {
         const batch = chunks.slice(batchStart, batchStart + CHUNK_BATCH_SIZE);
 
-        // Build a multi-row VALUES clause:
-        // ($1, $2, $3, $4), ($1, $5, $6, $7), ...
-        // companion_id is always $1; each chunk adds 3 params (index, content, wordCount)
-        const params: (number | string)[] = [companionId];
+        const params: (number | string | null)[] = [companionId];
         const valueClauses = batch.map((chunk, i) => {
-            const base = 2 + i * 3;
-            params.push(chunk.index, chunk.text.replace(/\u0000/g, ''), chunk.wordCount);
-            return `($1, $${base}, $${base + 1}, $${base + 2})`;
+            const base = 2 + i * 4;
+            const embeddingStr = Array.isArray(chunk.embedding)
+                ? `[${chunk.embedding.join(',')}]`
+                : null;
+            params.push(
+                chunk.index,
+                chunk.text.replace(/\u0000/g, ''),
+                chunk.wordCount,
+                embeddingStr
+            );
+            return `($1, $${base}, $${base + 1}, $${base + 2}, $${base + 3}::vector)`;
         });
 
         await query(
-            `INSERT INTO companion_chunks (companion_id, chunk_index, content, word_count)
+            `INSERT INTO companion_chunks (companion_id, chunk_index, content, word_count, embedding)
              VALUES ${valueClauses.join(", ")}
              ON CONFLICT (companion_id, chunk_index) DO UPDATE
-               SET content = EXCLUDED.content,
-                   word_count = EXCLUDED.word_count`,
+               SET content    = EXCLUDED.content,
+                   word_count = EXCLUDED.word_count,
+                   embedding  = COALESCE(EXCLUDED.embedding, companion_chunks.embedding)`,
             params
         );
     }

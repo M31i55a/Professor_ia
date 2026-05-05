@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import OpenAI from "openai";
+
+// Embedding client (OpenAI directly — OpenRouter doesn't support /embeddings).
+// If OPENAI_API_KEY is absent the search falls back to full-text search.
+const embeddingClient = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
 
 // ---------------------------------------------------------------------------
 // VAPI tool-call webhook: searchContent
@@ -81,7 +88,32 @@ async function searchChunks(
   if (!searchQuery.trim()) return "";
 
   try {
-    // 1. Full-text search (ranked by relevance)
+    // 1. Vector similarity search (semantic — understands meaning, not just keywords)
+    if (embeddingClient) {
+      const embRes = await embeddingClient.embeddings.create({
+        model: "text-embedding-3-small",
+        input: searchQuery,
+      });
+      const queryVector = `[${embRes.data[0].embedding.join(",")}]`;
+
+      const vectorResult = await query(
+        `SELECT content
+           FROM companion_chunks
+          WHERE companion_id = $1
+            AND embedding IS NOT NULL
+          ORDER BY embedding <=> $2::vector
+          LIMIT 3`,
+        [companionId, queryVector]
+      );
+
+      if (vectorResult.rows.length > 0) {
+        return vectorResult.rows
+          .map((r: { content: string }) => r.content)
+          .join("\n\n---\n\n");
+      }
+    }
+
+    // 2. Full-text search fallback (for companions created before pgvector was added)
     const ftsResult = await query(
       `SELECT content
          FROM companion_chunks
@@ -101,16 +133,14 @@ async function searchChunks(
         .join("\n\n---\n\n");
     }
 
-    // 2. Keyword fallback – use the longest words as regex alternation
+    // 3. Keyword regex fallback
     const keywords = searchQuery
       .split(/\s+/)
       .filter((k) => k.length > 2)
       .slice(0, 6)
-      .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")); // escape regex chars
+      .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
 
     if (keywords.length === 0) return "";
-
-    const pattern = keywords.join("|");
 
     const fallbackResult = await query(
       `SELECT content
@@ -119,7 +149,7 @@ async function searchChunks(
           AND content ~* $2
         ORDER BY chunk_index ASC
         LIMIT 3`,
-      [companionId, pattern]
+      [companionId, keywords.join("|")]
     );
 
     return fallbackResult.rows

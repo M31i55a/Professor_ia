@@ -40,6 +40,7 @@ interface TextChunk {
   text: string;
   index: number;
   wordCount: number;
+  embedding?: number[];
 }
 
 interface GetAllCompanions {
