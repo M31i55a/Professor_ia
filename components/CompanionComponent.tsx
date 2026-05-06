@@ -23,9 +23,12 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
     const [liveTranscript, setLiveTranscript] = useState<{ role: string; content: string } | null>(null);
     const [callError, setCallError] = useState<string | null>(null);
     const [secondsLeft, setSecondsLeft] = useState(duration * 60);
+    const [timedOut, setTimedOut] = useState(false);
     const wasActiveRef = useRef(false);
+    const isRecapRef = useRef(false);
     const msgIdRef = useRef(0);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const messagesRef = useRef<(SavedMessage & { _id: number })[]>([]);
 
     const lottieRef = useRef<LottieRefCurrentProps>(null);
 
@@ -51,6 +54,7 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
                     if (prev <= 1) {
                         clearInterval(timerRef.current!);
                         timerRef.current = null;
+                        setTimedOut(true);
                         vapi.stop();
                         return 0;
                     }
@@ -64,10 +68,12 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
             timerRef.current = null;
             setCallStatus(CallStatus.FINISHED);
             setLiveTranscript(null);
-            if (wasActiveRef.current) {
+            // Don't log recap calls as new session history entries
+            if (wasActiveRef.current && !isRecapRef.current) {
                 addToSessionHistory(companionId);
                 wasActiveRef.current = false;
             }
+            isRecapRef.current = false;
         };
 
         const onMessage = (message: Message) => {
@@ -77,7 +83,11 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
                 } else if (message.transcriptType === 'final') {
                     msgIdRef.current += 1;
                     const newMessage = { role: message.role, content: message.transcript, _id: msgIdRef.current };
-                    setMessages((prev) => [newMessage, ...prev]);
+                    setMessages((prev) => {
+                        const updated = [newMessage, ...prev];
+                        messagesRef.current = updated;
+                        return updated;
+                    });
                     setLiveTranscript(null);
                 }
             }
@@ -165,6 +175,54 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
         vapi.stop()
     }
 
+    const handleRecap = () => {
+        setCallError(null);
+        setCallStatus(CallStatus.CONNECTING);
+        isRecapRef.current = true;
+
+        // Build a transcript string from what was captured during the session.
+        // Messages are stored newest-first, so reverse them for chronological order.
+        const transcript = [...messagesRef.current]
+            .reverse()
+            .map((m) => `${m.role === 'assistant' ? name : userName}: ${m.content}`)
+            .join('\n');
+
+        const recapSystemPrompt = `You are ${name}, a voice tutor. The study session on "${topic}" just ended.
+
+Here is the full transcript of the session:
+${transcript || '(no transcript available)'}
+
+Your task: deliver a clear, concise spoken recap of the session in about 60-90 seconds.
+Cover:
+1. The main concepts that were discussed.
+2. Key points the student should remember.
+3. One specific thing to review or practise before the next session.
+
+Speak naturally — this is voice, not text. No bullet points, no markdown. Keep it warm and encouraging.`;
+
+        vapi.start({
+            name: name,
+            firstMessage: `Alright, here's a quick recap of our session on ${topic}.`,
+            transcriber: { provider: 'deepgram', model: 'nova-3', language: 'en' },
+            voice: {
+                provider: '11labs',
+                voiceId: getVoiceId(voice, style),
+                stability: 0.4,
+                similarityBoost: 0.8,
+                speed: 1,
+                style: 0.5,
+                useSpeakerBoost: true,
+            } as any,
+            model: {
+                provider: 'openrouter',
+                model: 'openai/gpt-4o',
+                messages: [{ role: 'system', content: recapSystemPrompt }],
+            } as any,
+            clientMessages: ['transcript'] as any,
+            serverMessages: [] as any,
+        } as any);
+    }
+
     return (
         <section className="flex flex-col flex-1 gap-4 overflow-hidden min-h-0">
             <section className="flex gap-4 max-sm:flex-col shrink-0">
@@ -245,13 +303,19 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
                         className={cn('btn-call',
                             callStatus === CallStatus.ACTIVE ? 'btn-call-end' :
                             callStatus === CallStatus.CONNECTING ? 'btn-call-connecting' :
+                            callStatus === CallStatus.FINISHED ? 'btn-call-recap' :
                             'btn-call-start'
                         )}
-                        onClick={callStatus === CallStatus.ACTIVE ? handleDisconnect : handleCall}
+                        onClick={
+                            callStatus === CallStatus.ACTIVE ? handleDisconnect :
+                            callStatus === CallStatus.FINISHED ? handleRecap :
+                            handleCall
+                        }
                         disabled={callStatus === CallStatus.CONNECTING}
                     >
                         {callStatus === CallStatus.ACTIVE ? 'End Session' :
-                         callStatus === CallStatus.CONNECTING ? 'Connecting...' :
+                         callStatus === CallStatus.CONNECTING ? (isRecapRef.current ? 'Loading recap...' : 'Connecting...') :
+                         callStatus === CallStatus.FINISHED ? '📋 Get Recap' :
                          'Start Session'}
                     </button>
 
