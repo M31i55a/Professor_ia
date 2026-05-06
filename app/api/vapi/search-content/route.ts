@@ -2,11 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import OpenAI from "openai";
 
-// Embedding client (OpenAI directly — OpenRouter doesn't support /embeddings).
-// If OPENAI_API_KEY is absent the search falls back to full-text search.
-const embeddingClient = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  : null;
+// Lazy embedding client — instantiated on first request, not at module evaluation
+// time. This prevents Vercel build failures when OPENAI_API_KEY is not set.
+let _embeddingClient: OpenAI | null | undefined = undefined;
+const getEmbeddingClient = () => {
+  if (_embeddingClient === undefined) {
+    _embeddingClient = process.env.OPENAI_API_KEY
+      ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+      : null;
+  }
+  return _embeddingClient;
+};
 
 // ---------------------------------------------------------------------------
 // VAPI tool-call webhook: searchContent
@@ -89,6 +95,7 @@ async function searchChunks(
 
   try {
     // 1. Vector similarity search (semantic — understands meaning, not just keywords)
+    const embeddingClient = getEmbeddingClient();
     if (embeddingClient) {
       const embRes = await embeddingClient.embeddings.create({
         model: "text-embedding-3-small",

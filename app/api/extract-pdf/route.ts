@@ -9,7 +9,7 @@ export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 // ---------------------------------------------------------------------------
-// Chunking helpers (mirrors the jsm_bookified splitIntoSegments approach)
+// Chunking helpers
 // ---------------------------------------------------------------------------
 interface TextChunk {
   text: string;
@@ -42,12 +42,58 @@ function splitIntoChunks(
   return chunks;
 }
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1",
-});
+// ---------------------------------------------------------------------------
+// Lazy clients — instantiated on first request, NOT at module evaluation time.
+// This prevents Vercel build failures when env vars are absent during `next build`.
+// ---------------------------------------------------------------------------
+let _openai: OpenAI | null = null;
+const getOpenAI = (): OpenAI => {
+  if (!_openai) {
+    _openai = new OpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY!,
+      baseURL: "https://openrouter.ai/api/v1",
+    });
+  }
+  return _openai;
+};
 
-// Valid subjects that the companion system recognises
+let _embeddingClient: OpenAI | null | undefined = undefined;
+const getEmbeddingClient = (): OpenAI | null => {
+  if (_embeddingClient === undefined) {
+    _embeddingClient = process.env.OPENAI_API_KEY
+      ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+      : null;
+  }
+  return _embeddingClient;
+};
+
+// Generate embeddings for all chunks in batches of 100.
+// Returns chunks unchanged if OPENAI_API_KEY is not set (graceful fallback).
+async function generateEmbeddingsForChunks(
+  chunks: TextChunk[]
+): Promise<(TextChunk & { embedding?: number[] })[]> {
+  const embeddingClient = getEmbeddingClient();
+  if (!embeddingClient || chunks.length === 0) return chunks;
+
+  const BATCH_SIZE = 100;
+  const embeddings: number[][] = [];
+
+  for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+    const batch = chunks.slice(i, i + BATCH_SIZE);
+    const response = await embeddingClient.embeddings.create({
+      model: "text-embedding-3-small",
+      input: batch.map((c) => c.text),
+    });
+    response.data.sort((a, b) => a.index - b.index);
+    embeddings.push(...response.data.map((d) => d.embedding));
+  }
+
+  return chunks.map((chunk, i) => ({ ...chunk, embedding: embeddings[i] }));
+}
+
+// ---------------------------------------------------------------------------
+// Valid subjects
+// ---------------------------------------------------------------------------
 const VALID_SUBJECTS = [
   "maths",
   "language",
@@ -107,8 +153,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Skip the front matter (title page, copyright, TOC) by starting ~8% into
-    // the document (capped at 3 000 chars). This brings the analysis window
-    // into the actual educational content much sooner.
+    // the document (capped at 3 000 chars).
     const frontMatterSkip = Math.min(3000, Math.floor(rawText.length * 0.08));
     const contentText = rawText.slice(frontMatterSkip);
 
@@ -116,7 +161,7 @@ export async function POST(req: NextRequest) {
     const textForAnalysis = contentText.slice(0, 20000);
 
     // Ask GPT-4o-mini to classify the document and write a comprehensive study summary
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: "openai/gpt-4o-mini",
       messages: [
         {
@@ -154,17 +199,14 @@ Given document text, return a JSON object with EXACTLY these three fields:
         ? aiResult.topic.trim()
         : "General Study Material";
 
-    // Build a compact teaching-notes summary stored in the companions row.
-    // This is injected as a brief context in the VAPI system prompt.
-    // Detailed retrieval happens at query-time via the searchContent tool.
     const pdfContent =
       typeof aiResult.summary === "string" && aiResult.summary.trim().length > 0
         ? `=== TEACHING NOTES ===\n${aiResult.summary.trim()}`
         : "";
 
-    // Chunk the FULL document text (no truncation) for RAG storage.
-    // The companion's chunks are saved separately after the companion is created.
-    const chunks = splitIntoChunks(contentText);
+    // Chunk the FULL document text and generate embeddings (if OPENAI_API_KEY is set).
+    const rawChunks = splitIntoChunks(contentText);
+    const chunks = await generateEmbeddingsForChunks(rawChunks);
 
     return NextResponse.json({ subject, topic, pdfContent, chunks });
   } catch (err) {
@@ -175,3 +217,4 @@ Given document text, return a JSON object with EXACTLY these three fields:
     );
   }
 }
+

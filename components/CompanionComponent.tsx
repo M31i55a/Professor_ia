@@ -15,15 +15,17 @@ enum CallStatus {
     FINISHED = 'FINISHED',
 }
 
-const CompanionComponent = ({ companionId, subject, topic, name, userName, userImage, style, voice, pdf_content }: CompanionComponentProps) => {
+const CompanionComponent = ({ companionId, subject, topic, name, userName, userImage, style, voice, duration, pdf_content }: CompanionComponentProps) => {
     const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
     const [messages, setMessages] = useState<(SavedMessage & { _id: number })[]>([]);
     const [liveTranscript, setLiveTranscript] = useState<{ role: string; content: string } | null>(null);
     const [callError, setCallError] = useState<string | null>(null);
+    const [secondsLeft, setSecondsLeft] = useState(duration * 60);
     const wasActiveRef = useRef(false);
     const msgIdRef = useRef(0);
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const lottieRef = useRef<LottieRefCurrentProps>(null);
 
@@ -41,10 +43,25 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
         const onCallStart = () => {
             wasActiveRef.current = true;
             setCallError(null);
+            setSecondsLeft(duration * 60);
             setCallStatus(CallStatus.ACTIVE);
+            // Start countdown
+            timerRef.current = setInterval(() => {
+                setSecondsLeft((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(timerRef.current!);
+                        timerRef.current = null;
+                        vapi.stop();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
         };
 
         const onCallEnd = () => {
+            clearInterval(timerRef.current!);
+            timerRef.current = null;
             setCallStatus(CallStatus.FINISHED);
             setLiveTranscript(null);
             if (wasActiveRef.current) {
@@ -237,6 +254,16 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
                          callStatus === CallStatus.CONNECTING ? 'Connecting...' :
                          'Start Session'}
                     </button>
+
+                    {callStatus === CallStatus.ACTIVE && (
+                        <p className={cn(
+                            'text-sm font-mono font-semibold tabular-nums',
+                            secondsLeft <= 60 ? 'text-red-400 animate-pulse' :
+                            secondsLeft <= 180 ? 'text-orange-400' : 'text-white/50'
+                        )}>
+                            {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, '0')} remaining
+                        </p>
+                    )}
                 </div>
             </section>
 
