@@ -24,6 +24,8 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
     const [callError, setCallError] = useState<string | null>(null);
     const [secondsLeft, setSecondsLeft] = useState(duration * 60);
     const [timedOut, setTimedOut] = useState(false);
+    const [isGeneratingRecap, setIsGeneratingRecap] = useState(false);
+    const [recapDone, setRecapDone] = useState(false);
     const wasActiveRef = useRef(false);
     const isRecapRef = useRef(false);
     const msgIdRef = useRef(0);
@@ -46,8 +48,16 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
         const onCallStart = () => {
             wasActiveRef.current = true;
             setCallError(null);
-            setSecondsLeft(duration * 60);
             setCallStatus(CallStatus.ACTIVE);
+
+            if (isRecapRef.current) {
+                // Recap mode: mute mic so the AI is never interrupted and just talks
+                vapi.setMuted(true);
+                setIsMuted(true);
+                return; // No countdown timer for recap
+            }
+
+            setSecondsLeft(duration * 60);
             // Start countdown
             timerRef.current = setInterval(() => {
                 setSecondsLeft((prev) => {
@@ -68,8 +78,11 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
             timerRef.current = null;
             setCallStatus(CallStatus.FINISHED);
             setLiveTranscript(null);
-            // Don't log recap calls as new session history entries
-            if (wasActiveRef.current && !isRecapRef.current) {
+            setIsMuted(false);
+            if (isRecapRef.current) {
+                // Recap just ended — lock the session permanently
+                setRecapDone(true);
+            } else if (wasActiveRef.current) {
                 addToSessionHistory(companionId);
                 wasActiveRef.current = false;
             }
@@ -175,34 +188,40 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
         vapi.stop()
     }
 
-    const handleRecap = () => {
+    const handleRecap = async () => {
         setCallError(null);
-        setCallStatus(CallStatus.CONNECTING);
+        setIsGeneratingRecap(true);
         isRecapRef.current = true;
 
-        // Build a transcript string from what was captured during the session.
-        // Messages are stored newest-first, so reverse them for chronological order.
+        // Build chronological transcript string
         const transcript = [...messagesRef.current]
             .reverse()
             .map((m) => `${m.role === 'assistant' ? name : userName}: ${m.content}`)
             .join('\n');
 
-        const recapSystemPrompt = `You are ${name}, a voice tutor. The study session on "${topic}" just ended.
+        let recapText: string;
+        try {
+            const res = await fetch('/api/recap', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ transcript, topic, name, userName }),
+            });
+            const data = await res.json();
+            recapText = data.recap;
+        } catch {
+            recapText = `Great session on ${topic} today! We covered the key concepts thoroughly. Make sure to review your notes and keep practising. You're doing great — see you next time!`;
+        }
 
-Here is the full transcript of the session:
-${transcript || '(no transcript available)'}
+        setIsGeneratingRecap(false);
+        setCallStatus(CallStatus.CONNECTING);
 
-Your task: deliver a clear, concise spoken recap of the session in about 60-90 seconds.
-Cover:
-1. The main concepts that were discussed.
-2. Key points the student should remember.
-3. One specific thing to review or practise before the next session.
-
-Speak naturally — this is voice, not text. No bullet points, no markdown. Keep it warm and encouraging.`;
-
+        // Pass the FULL recap as firstMessage so the AI speaks it immediately
+        // without waiting for any user input. The mic will be muted on call-start.
         vapi.start({
             name: name,
-            firstMessage: `Alright, here's a quick recap of our session on ${topic}.`,
+            firstMessage: recapText,
+            // After firstMessage finishes and there's silence, end the call automatically
+            silenceTimeoutSeconds: 10,
             transcriber: { provider: 'deepgram', model: 'nova-3', language: 'en' },
             voice: {
                 provider: '11labs',
@@ -215,8 +234,11 @@ Speak naturally — this is voice, not text. No bullet points, no markdown. Keep
             } as any,
             model: {
                 provider: 'openrouter',
-                model: 'openai/gpt-4o',
-                messages: [{ role: 'system', content: recapSystemPrompt }],
+                model: 'openai/gpt-4o-mini',
+                messages: [{
+                    role: 'system',
+                    content: `You are ${name}. You have just delivered the session recap above. Do not say anything else. If asked anything, reply only: "I hope that recap was helpful! Goodbye." and end.`,
+                }],
             } as any,
             clientMessages: ['transcript'] as any,
             serverMessages: [] as any,
@@ -301,20 +323,24 @@ Speak naturally — this is voice, not text. No bullet points, no markdown. Keep
 
                     <button
                         className={cn('btn-call',
+                            recapDone ? 'btn-call-recap opacity-40 cursor-not-allowed' :
                             callStatus === CallStatus.ACTIVE ? 'btn-call-end' :
-                            callStatus === CallStatus.CONNECTING ? 'btn-call-connecting' :
+                            (callStatus === CallStatus.CONNECTING || isGeneratingRecap) ? 'btn-call-connecting' :
                             callStatus === CallStatus.FINISHED ? 'btn-call-recap' :
                             'btn-call-start'
                         )}
                         onClick={
+                            recapDone ? undefined :
                             callStatus === CallStatus.ACTIVE ? handleDisconnect :
-                            callStatus === CallStatus.FINISHED ? handleRecap :
-                            handleCall
+                            callStatus === CallStatus.FINISHED && !isGeneratingRecap ? handleRecap :
+                            !isGeneratingRecap ? handleCall : undefined
                         }
-                        disabled={callStatus === CallStatus.CONNECTING}
+                        disabled={recapDone || callStatus === CallStatus.CONNECTING || isGeneratingRecap}
                     >
-                        {callStatus === CallStatus.ACTIVE ? 'End Session' :
-                         callStatus === CallStatus.CONNECTING ? (isRecapRef.current ? 'Loading recap...' : 'Connecting...') :
+                        {recapDone ? '✓ Session Complete' :
+                         callStatus === CallStatus.ACTIVE ? (isRecapRef.current ? 'End Recap' : 'End Session') :
+                         isGeneratingRecap ? 'Generating recap...' :
+                         callStatus === CallStatus.CONNECTING ? 'Connecting...' :
                          callStatus === CallStatus.FINISHED ? '📋 Get Recap' :
                          'Start Session'}
                     </button>
