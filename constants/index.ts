@@ -15,7 +15,7 @@ export const subjectsColors = {
   coding: "#FFC8E4",
   history: "#FFECC8",
   economics: "#C8FFDF",
-  Biology: "#D0F0C0",
+  Biology: "#D0F0C1",
 };
 
 export const voices = {
@@ -78,6 +78,6 @@ export const recentSessions = [
     name: "Bio the Life Explorer",
     topic: "Cell Structure and Function",
     duration: 20,
-    color: "#D0F0C0",
+    color: "#D0F0C1",
   }
 ];
